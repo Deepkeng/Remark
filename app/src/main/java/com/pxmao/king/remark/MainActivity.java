@@ -414,7 +414,6 @@ public class MainActivity extends AppCompatActivity {
         while (cursor.moveToNext()) {
             while (cursor.moveToNext()) {
                 String nickname = cursor.getString(cursor.getColumnIndex("nickname"));
-
                 Log.d(TAG, "getData: nickname " + nickname);
             }
             cursor.close();
