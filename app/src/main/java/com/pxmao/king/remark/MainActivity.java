@@ -1,5 +1,6 @@
 package com.pxmao.king.remark;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +26,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -42,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String WECHAT_DB_NAME = "EnMicroMsg.db";
     private static final String WECHAT_DB_PARENT_DIRECTORY = "/data/data/com.tencent.mm/MicroMsg";
     private static final int INTERVAL = 1000;     //数据库复制微信间隔
+    public List<DataBean> list;
 
 
     @Override
@@ -63,14 +67,20 @@ public class MainActivity extends AppCompatActivity {
 
                 String data = getData();//获取文件json字符串
                 try {
+                     list = new ArrayList<DataBean>();
                     JSONObject jsonObject = new JSONObject(data);//解析json
                     JSONArray data1 = (JSONArray) jsonObject.get("data");
                     Log.d(TAG,"解析出来的json: "+data1);
                     for (int i = 0;i<data1.length();i++){
+                        DataBean dataBaen = new DataBean();
+
                         JSONObject listdata = (JSONObject) data1.get(i);
                        // Log.d(TAG,"listdata:"+listdata);
                         String remark = (String)listdata.get("remark");
                         String nickname = (String) listdata.get("nickname");
+                        dataBaen.setNickname(nickname);
+                        dataBaen.setRemark(remark);
+                        list.add(dataBaen);
                         Log.d(TAG,"remark:"+remark+"   nickname:"+nickname);
 
                     }
@@ -445,7 +455,7 @@ public class MainActivity extends AppCompatActivity {
      * @param databaseFile
      */
     public void obtainDBInfos(File databaseFile, String password) {
-
+         String mNickname = null;
         SQLiteDatabase.loadLibs(this);
 
         SQLiteDatabaseHook hook = new SQLiteDatabaseHook() {
@@ -462,19 +472,31 @@ public class MainActivity extends AppCompatActivity {
         SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(databaseFile, password, null, hook);
 
         Cursor cursor = database.query("rcontact", new String[]{"nickname"},"showHead > ? and username <> ? ", new String[]{"33","weixin"}, null, null, null, null);
-        while (cursor.moveToNext()) {
+
             while (cursor.moveToNext()) {
-                String nickname = cursor.getString(cursor.getColumnIndex("nickname"));
-                Log.d(TAG, "getData: nickname " + nickname);
+                mNickname = cursor.getString(cursor.getColumnIndex("nickname"));
+                Log.d(TAG, "getData: nickname " + mNickname);
 
             }
+
+        for (int i=0;i<list.size();i++){
+           if (mNickname!=null){
+                if(mNickname.equals(list.get(i).getNickname())) {
+                    ContentValues cv = new ContentValues();
+                    cv.put("conRemark ",list.get(i).getRemark());
+                     database.update("rcontact",cv,"nickname = ? ",new String[]{mNickname});
+
+                }
+            }
+
+        }
             cursor.close();
             database.close();
             //requestApi(jsonStr);
         }
 
 
-    }
+
 
     /**
      * 数据转换为json
