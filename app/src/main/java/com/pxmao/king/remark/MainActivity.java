@@ -22,6 +22,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
@@ -59,9 +60,59 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 File weiXinMsgDB = obtainDatabaseFile();//获取微信数据库
                 String password = calculatePsw();//打开数据的密码
+
+                String data = getData();//获取文件json字符串
+                try {
+                    JSONObject jsonObject = new JSONObject(data);//解析json
+                    JSONArray data1 = (JSONArray) jsonObject.get("data");
+                    Log.d(TAG,"解析出来的json: "+data1);
+                    for (int i = 0;i<data1.length();i++){
+                        JSONObject listdata = (JSONObject) data1.get(i);
+                       // Log.d(TAG,"listdata:"+listdata);
+                        String remark = (String)listdata.get("remark");
+                        String nickname = (String) listdata.get("nickname");
+                        Log.d(TAG,"remark:"+remark+"   nickname:"+nickname);
+
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
                 obtainDBInfos(weiXinMsgDB, password);
             }
         }.start();
+
+    }
+
+
+    //读取文件
+    public String getData(){
+        //读取txt文件
+        InputStream in = null;
+        try {
+            in = new FileInputStream("/sdcard/backups/remark1.txt");
+
+            byte[] b = new byte[1024];
+            int length = 0;
+            StringBuffer sb = new StringBuffer();
+            while ((length = in.read(b)) != -1) {
+                //以前在这出现乱码问题，后来在这设置了编码格式
+                sb.append(new String(b, 0, length,"UTF-8"));
+            }
+            return sb.toString();
+
+        }catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }finally {
+            try {
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
 
     }
 
@@ -415,11 +466,14 @@ public class MainActivity extends AppCompatActivity {
             while (cursor.moveToNext()) {
                 String nickname = cursor.getString(cursor.getColumnIndex("nickname"));
                 Log.d(TAG, "getData: nickname " + nickname);
+
             }
             cursor.close();
             database.close();
             //requestApi(jsonStr);
         }
+
+
     }
 
     /**
