@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
-                File weiXinMsgDB = obtainDatabaseFile();//获取微信数据库
+                File weiXinMsgDB = obtainDatabaseFile();//复制微信数据库到sd卡
                 String password = calculatePsw();//打开数据的密码
                 String data = getData();//获取文件json字符串
                 parserFile(data);// 解析json并封装
