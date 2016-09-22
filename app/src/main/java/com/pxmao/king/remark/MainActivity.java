@@ -63,32 +63,11 @@ public class MainActivity extends AppCompatActivity {
                 File weiXinMsgDB = obtainDatabaseFile();//获取微信数据库
                 String password = calculatePsw();//打开数据的密码
 
-                String data = getData();//获取文件json字符串
-                try {
-                    list = new ArrayList<DataBean>();
-                    JSONObject jsonObject = new JSONObject(data);//解析json
-                    JSONArray data1 = (JSONArray) jsonObject.get("data");
-                    Log.d(TAG, "解析出来的json: " + data1);
-
-                    for (int i = 0; i < data1.length(); i++) {
-                        DataBean dataBaen = new DataBean();
-                        JSONObject listdata = (JSONObject) data1.get(i);
-                        // Log.d(TAG,"listdata:"+listdata);
-                        String remark = (String) listdata.get("remark");
-                        String nickname = (String) listdata.get("nickname");
-                        //封装到bean
-                        dataBaen.setNickname(nickname);
-                        dataBaen.setRemark(remark);
-                        list.add(dataBaen);
-                        Log.d(TAG, "备注: " + remark + "   昵称: " + nickname);
-
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                readFile();// 读配置文件数据
                 updateWeiXinDB(weiXinMsgDB, password);//修改微信数据库
             }
+
+
         }.start();
     }
 
@@ -97,7 +76,32 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    private void readFile() {
+        String data = getData();//获取文件json字符串
+        try {
+            list = new ArrayList<DataBean>();
+            JSONObject jsonObject = new JSONObject(data);//解析json
+            JSONArray data1 = (JSONArray) jsonObject.get("data");
+            Log.d(TAG, "解析出来的json: " + data1);
 
+            for (int i = 0; i < data1.length(); i++) {
+                DataBean dataBaen = new DataBean();
+                JSONObject listdata = (JSONObject) data1.get(i);
+                // Log.d(TAG,"listdata:"+listdata);
+                String remark = (String) listdata.get("remark");
+                String nickname = (String) listdata.get("nickname");
+                //封装到bean
+                dataBaen.setNickname(nickname);
+                dataBaen.setRemark(remark);
+                list.add(dataBaen);
+                Log.d(TAG, "备注: " + remark + "   昵称: " + nickname);
+
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 
