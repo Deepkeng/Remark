@@ -62,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 File weiXinMsgDB = obtainDatabaseFile();//获取微信数据库
                 String password = calculatePsw();//打开数据的密码
-
-                readFile();// 读配置文件数据
+                String data = getData();//获取文件json字符串
+                parserFile(data);// 解析json并封装
                 updateWeiXinDB(weiXinMsgDB, password);//修改微信数据库
             }
 
@@ -76,8 +76,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    private void readFile() {
-        String data = getData();//获取文件json字符串
+    private void parserFile(String data) {
         try {
             list = new ArrayList<DataBean>();
             JSONObject jsonObject = new JSONObject(data);//解析json
