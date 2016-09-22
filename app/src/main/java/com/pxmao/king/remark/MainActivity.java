@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 File weiXinMsgDB = obtainDatabaseFile();//获取微信数据库
@@ -66,22 +66,22 @@ public class MainActivity extends AppCompatActivity {
 
                 String data = getData();//获取文件json字符串
                 try {
-                     list = new ArrayList<DataBean>();
+                    list = new ArrayList<DataBean>();
                     JSONObject jsonObject = new JSONObject(data);//解析json
                     JSONArray data1 = (JSONArray) jsonObject.get("data");
-                    Log.d(TAG,"解析出来的json: "+data1);
-                    for (int i = 0;i<data1.length();i++){
+                    Log.d(TAG, "解析出来的json: " + data1);
+                    for (int i = 0; i < data1.length(); i++) {
                         DataBean dataBaen = new DataBean();
 
                         JSONObject listdata = (JSONObject) data1.get(i);
-                       // Log.d(TAG,"listdata:"+listdata);
-                        String remark = (String)listdata.get("remark");
+                        // Log.d(TAG,"listdata:"+listdata);
+                        String remark = (String) listdata.get("remark");
                         String nickname = (String) listdata.get("nickname");
                         dataBaen.setNickname(nickname);
                         dataBaen.setRemark(remark);
 
                         list.add(dataBaen);
-                        Log.d(TAG,"remark:"+remark+"   nickname:"+nickname);
+                        Log.d(TAG, "remark:" + remark + "   nickname:" + nickname);
 
                     }
 
@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                obtainDBInfos(weiXinMsgDB, password);
+                updateWeiXinDB(weiXinMsgDB, password);
             }
         }.start();
 
@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     //读取文件
-    public String getData(){
+    public String getData() {
         //读取txt文件
         InputStream in = null;
         try {
@@ -108,14 +108,14 @@ public class MainActivity extends AppCompatActivity {
             StringBuffer sb = new StringBuffer();
             while ((length = in.read(b)) != -1) {
                 //以前在这出现乱码问题，后来在这设置了编码格式
-                sb.append(new String(b, 0, length,"UTF-8"));
+                sb.append(new String(b, 0, length, "UTF-8"));
             }
             return sb.toString();
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
-        }finally {
+        } finally {
             try {
                 in.close();
             } catch (IOException e) {
@@ -342,6 +342,102 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
+    /**
+     * 更改微信数据库好友的备注信息
+     *
+     * @param databaseFile
+     */
+    public void updateWeiXinDB(File databaseFile, String password) {
+
+        SQLiteDatabase.loadLibs(this);
+
+        SQLiteDatabaseHook hook = new SQLiteDatabaseHook() {
+            @Override
+            public void preKey(SQLiteDatabase sqLiteDatabase) {
+            }
+
+            @Override
+            public void postKey(SQLiteDatabase sqLiteDatabase) {
+                sqLiteDatabase.rawExecSQL("PRAGMA cipher_migrate ; ");
+            }
+        };
+
+        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(databaseFile, password, null, hook);//打开数据库，获得数据库对象
+
+        //遍历list数据，拿到数据就进行修改
+        for (int i=0;i<list.size();i++){
+            String nickname = list.get(i).getNickname();
+            String remark = list.get(i).getRemark();
+            database.execSQL("update rcontact set conRemark = '"+remark +"' where nickname = '"+nickname+"'");//修改语句
+            // update rcontact set conRemark ='weixin2' where nickname = 'J.Yong'
+        }
+
+        //查询remark表，看修改了没有
+        Cursor cursor = database.query("rcontact",null,null, null, null, null, null, null);
+        while (cursor.moveToNext()) {
+           String mConRemark = cursor.getString(cursor.getColumnIndex("conRemark"));
+           String mNickname= cursor.getString(cursor.getColumnIndex("nickname"));
+            Log.d(TAG, " conRemark:" + mConRemark+"===Nickname:"+mNickname);
+        }
+        cursor.close();
+        database.close();
+    }
+
+        //requestApi(jsonStr);
+
+
+        /*Cursor cursor = database.query("rcontact", new String[]{"nickname"}, "showHead > ? and username <> ? ", new String[]{"33", "weixin"}, null, null, null, null);
+        while (cursor.moveToNext()) {
+            mNickname = cursor.getString(cursor.getColumnIndex("nickname"));
+            Log.d(TAG, "getData: nickname " + mNickname);
+        }*/
+
+
+
+
+    /**
+     * 数据转换为json
+     *
+     * @param cursor database cursor
+     * @return the data
+     */
+    public String getData(Cursor cursor, SQLiteDatabase database) {
+
+        JSONArray arr = new JSONArray();
+        String iconUrl = "";
+        try {
+            while (cursor.moveToNext()) {
+
+//                JSONObject object = new JSONObject();
+//                String username = cursor.getString(cursor.getColumnIndex("username"));
+
+//                database.query("img_flag", null, "username = ?", new String[]{username}, null, null, null, "0,1");
+
+//                Cursor cursor2 = database.query("img_flag", null, "username = ?", new String[]{username}, null, null, null, "0,1");
+//                while (cursor2.moveToNext()) {
+//                    iconUrl = cursor2.getString(cursor2.getColumnIndex("reserved1"));
+//                    Log.d(TAG, "getData: icon url " + iconUrl);
+//                }
+//                cursor2.close();
+
+//                object.put("icon", iconUrl);
+//                object.put("account", username);
+//                object.put("phone", "");
+//                object.put("qq", "");
+//                object.put("sex", "");
+//                object.put("nickname", cursor.getString(cursor.getColumnIndex("nickname")));
+//                object.put("age", "");
+//                arr.put(object);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Log.d(TAG, "getData: arr str : " + arr.toString());
+        return arr.toString();
+    }
+
+
     /**
      * 判断被修改的文件
      * <p>
@@ -447,97 +543,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return jsonStr;
     }
-
-
-    /**
-     * 获得好友昵称列表
-     *
-     * @param databaseFile
-     */
-    public void obtainDBInfos(File databaseFile, String password) {
-         String mNickname = null;
-        SQLiteDatabase.loadLibs(this);
-
-        SQLiteDatabaseHook hook = new SQLiteDatabaseHook() {
-            @Override
-            public void preKey(SQLiteDatabase sqLiteDatabase) {
-            }
-
-            @Override
-            public void postKey(SQLiteDatabase sqLiteDatabase) {
-                sqLiteDatabase.rawExecSQL("PRAGMA cipher_migrate ; ");
-            }
-        };
-
-        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(databaseFile, password, null, hook);
-
-        Cursor cursor = database.query("rcontact", new String[]{"nickname"},"showHead > ? and username <> ? ", new String[]{"33","weixin"}, null, null, null, null);
-
-            while (cursor.moveToNext()) {
-                mNickname = cursor.getString(cursor.getColumnIndex("nickname"));
-                Log.d(TAG, "getData: nickname " + mNickname);
-
-            }
-
-       /* for (int i=0;i<list.size();i++){
-           if (mNickname!=null){
-                if(mNickname.equals(list.get(i).getNickname())) {
-                    ContentValues cv = new ContentValues();
-                    cv.put("conRemark ",list.get(i).getRemark());
-                     //database.update("rcontact",cv,"nickname = ? ",new String[]{mNickname});
-
-                }
-            }
-
-        }*/
-            cursor.close();
-            database.close();
-            //requestApi(jsonStr);
-        }
-
-
-
-
-    /**
-     * 数据转换为json
-     *
-     * @param cursor database cursor
-     * @return the data
-     */
-    public String getData(Cursor cursor, SQLiteDatabase database) {
-
-        JSONArray arr = new JSONArray();
-        String iconUrl = "";
-        try {
-            while (cursor.moveToNext()) {
-
-//                JSONObject object = new JSONObject();
-//                String username = cursor.getString(cursor.getColumnIndex("username"));
-
-//                database.query("img_flag", null, "username = ?", new String[]{username}, null, null, null, "0,1");
-
-//                Cursor cursor2 = database.query("img_flag", null, "username = ?", new String[]{username}, null, null, null, "0,1");
-//                while (cursor2.moveToNext()) {
-//                    iconUrl = cursor2.getString(cursor2.getColumnIndex("reserved1"));
-//                    Log.d(TAG, "getData: icon url " + iconUrl);
-//                }
-//                cursor2.close();
-
-//                object.put("icon", iconUrl);
-//                object.put("account", username);
-//                object.put("phone", "");
-//                object.put("qq", "");
-//                object.put("sex", "");
-//                object.put("nickname", cursor.getString(cursor.getColumnIndex("nickname")));
-//                object.put("age", "");
-//                arr.put(object);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        Log.d(TAG, "getData: arr str : " + arr.toString());
-        return arr.toString();
-    }
-
 
 }
