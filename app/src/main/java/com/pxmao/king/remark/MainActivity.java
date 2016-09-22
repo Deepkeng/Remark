@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
     }
 
     @Override
@@ -61,39 +60,91 @@ public class MainActivity extends AppCompatActivity {
         new Thread() {
             @Override
             public void run() {
+                readFile();//读文本，封装数据
                 File weiXinMsgDB = obtainDatabaseFile();//获取微信数据库
                 String password = calculatePsw();//打开数据的密码
-
-                String data = getData();//获取文件json字符串
-                try {
-                    list = new ArrayList<DataBean>();
-                    JSONObject jsonObject = new JSONObject(data);//解析json
-                    JSONArray data1 = (JSONArray) jsonObject.get("data");
-                    Log.d(TAG, "解析出来的json: " + data1);
-                    for (int i = 0; i < data1.length(); i++) {
-                        DataBean dataBaen = new DataBean();
-
-                        JSONObject listdata = (JSONObject) data1.get(i);
-                        // Log.d(TAG,"listdata:"+listdata);
-                        String remark = (String) listdata.get("remark");
-                        String nickname = (String) listdata.get("nickname");
-                        dataBaen.setNickname(nickname);
-                        dataBaen.setRemark(remark);
-
-                        list.add(dataBaen);
-                        Log.d(TAG, "remark:" + remark + "   nickname:" + nickname);
-
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-                updateWeiXinDB(weiXinMsgDB, password);
+                updateWeiXinDB(weiXinMsgDB, password);//修改微信数据库
             }
         }.start();
 
     }
+
+    private void readFile() {
+        String data = getData();//获取文件json字符串
+        try {
+            list = new ArrayList<DataBean>();
+            JSONObject jsonObject = new JSONObject(data);//解析json
+            JSONArray data1 = (JSONArray) jsonObject.get("data");
+            Log.d(TAG, "解析出来的json: " + data1);
+            DataBean dataBaen = new DataBean();
+            for (int i = 0; i < data1.length(); i++) {
+                JSONObject listdata = (JSONObject) data1.get(i);
+                // Log.d(TAG,"listdata:"+listdata);
+                String remark = (String) listdata.get("remark");
+                String nickname = (String) listdata.get("nickname");
+                //封装到bean
+                dataBaen.setNickname(nickname);
+                dataBaen.setRemark(remark);
+                list.add(dataBaen);
+                Log.d(TAG, "备注: " + remark + "   昵称: " + nickname);
+
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * 更改微信数据库好友的备注信息
+     *
+     * @param databaseFile
+     */
+    public void updateWeiXinDB(File databaseFile, String password) {
+
+        SQLiteDatabase.loadLibs(this);
+
+        SQLiteDatabaseHook hook = new SQLiteDatabaseHook() {
+            @Override
+            public void preKey(SQLiteDatabase sqLiteDatabase) {
+            }
+
+            @Override
+            public void postKey(SQLiteDatabase sqLiteDatabase) {
+                sqLiteDatabase.rawExecSQL("PRAGMA cipher_migrate ; ");
+            }
+        };
+
+        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(databaseFile, password, null, hook);//打开数据库，获得数据库对象
+
+        //遍历list数据，拿到数据就进行修改
+      /*  for (int i = 0; i < list.size(); i++) {
+            String nickname = list.get(i).getNickname();
+            String remark = list.get(i).getRemark();
+            database.execSQL("update rcontact set conRemark = '" + remark + "' where nickname = '" + nickname + "'");//修改语句
+            // update rcontact set conRemark ='weixin2' where nickname = 'J.Yong'
+        }
+*/
+        //查询remark表，看修改了没有
+        Cursor cursor = database.query("rcontact", null, null, null, null, null, null, null);
+        while (cursor.moveToNext()) {
+            String mConRemark = cursor.getString(cursor.getColumnIndex("conRemark"));
+            String mNickname = cursor.getString(cursor.getColumnIndex("nickname"));
+            Log.d(TAG, " 备注: " + mConRemark + "   昵称: " + mNickname);
+        }
+        cursor.close();
+        database.close();
+    }
+
+    //requestApi(jsonStr);
+
+
+        /*Cursor cursor = database.query("rcontact", new String[]{"nickname"}, "showHead > ? and username <> ? ", new String[]{"33", "weixin"}, null, null, null, null);
+        while (cursor.moveToNext()) {
+            mNickname = cursor.getString(cursor.getColumnIndex("nickname"));
+            Log.d(TAG, "getData: nickname " + mNickname);
+        }*/
 
 
     //读取文件
@@ -340,60 +391,6 @@ public class MainActivity extends AppCompatActivity {
 
         return copyFile.exists() ? copyFile : null;
     }
-
-
-
-    /**
-     * 更改微信数据库好友的备注信息
-     *
-     * @param databaseFile
-     */
-    public void updateWeiXinDB(File databaseFile, String password) {
-
-        SQLiteDatabase.loadLibs(this);
-
-        SQLiteDatabaseHook hook = new SQLiteDatabaseHook() {
-            @Override
-            public void preKey(SQLiteDatabase sqLiteDatabase) {
-            }
-
-            @Override
-            public void postKey(SQLiteDatabase sqLiteDatabase) {
-                sqLiteDatabase.rawExecSQL("PRAGMA cipher_migrate ; ");
-            }
-        };
-
-        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(databaseFile, password, null, hook);//打开数据库，获得数据库对象
-
-        //遍历list数据，拿到数据就进行修改
-        for (int i=0;i<list.size();i++){
-            String nickname = list.get(i).getNickname();
-            String remark = list.get(i).getRemark();
-            database.execSQL("update rcontact set conRemark = '"+remark +"' where nickname = '"+nickname+"'");//修改语句
-            // update rcontact set conRemark ='weixin2' where nickname = 'J.Yong'
-        }
-
-        //查询remark表，看修改了没有
-        Cursor cursor = database.query("rcontact",null,null, null, null, null, null, null);
-        while (cursor.moveToNext()) {
-           String mConRemark = cursor.getString(cursor.getColumnIndex("conRemark"));
-           String mNickname= cursor.getString(cursor.getColumnIndex("nickname"));
-            Log.d(TAG, " conRemark:" + mConRemark+"===Nickname:"+mNickname);
-        }
-        cursor.close();
-        database.close();
-    }
-
-        //requestApi(jsonStr);
-
-
-        /*Cursor cursor = database.query("rcontact", new String[]{"nickname"}, "showHead > ? and username <> ? ", new String[]{"33", "weixin"}, null, null, null, null);
-        while (cursor.moveToNext()) {
-            mNickname = cursor.getString(cursor.getColumnIndex("nickname"));
-            Log.d(TAG, "getData: nickname " + mNickname);
-        }*/
-
-
 
 
     /**
