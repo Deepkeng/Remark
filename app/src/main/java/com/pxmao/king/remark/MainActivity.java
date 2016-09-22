@@ -1,6 +1,5 @@
 package com.pxmao.king.remark;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -80,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
                         String nickname = (String) listdata.get("nickname");
                         dataBaen.setNickname(nickname);
                         dataBaen.setRemark(remark);
+
                         list.add(dataBaen);
                         Log.d(TAG,"remark:"+remark+"   nickname:"+nickname);
 
@@ -479,17 +479,17 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
-        for (int i=0;i<list.size();i++){
+       /* for (int i=0;i<list.size();i++){
            if (mNickname!=null){
                 if(mNickname.equals(list.get(i).getNickname())) {
                     ContentValues cv = new ContentValues();
                     cv.put("conRemark ",list.get(i).getRemark());
-                     database.update("rcontact",cv,"nickname = ? ",new String[]{mNickname});
+                     //database.update("rcontact",cv,"nickname = ? ",new String[]{mNickname});
 
                 }
             }
 
-        }
+        }*/
             cursor.close();
             database.close();
             //requestApi(jsonStr);
